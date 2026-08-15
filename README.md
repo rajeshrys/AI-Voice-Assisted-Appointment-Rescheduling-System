@@ -1,45 +1,28 @@
-# 🏥 Hospital Management System (API Gateway + Microservices Architecture)
+# 🏥 Hospital Management System (Unified Backend)
 
-A modern, full-stack Hospital Management & Appointment System built with a **React + Vite Frontend**, an **API Gateway**, and specialized **Node.js/Express Microservices** powered by **PostgreSQL**.
-
----
-
-## 🌐 Single Entry Point Architecture (API Gateway)
-
-All frontend interactions connect exclusively through **ONE single port**: **API Gateway (`http://localhost:5000`)**.
-The API Gateway seamlessly proxies and load balances traffic to the underlying microservices:
-
-```
-                               ┌────────────────────────────────┐
-                               │     React Frontend (Port 5173) │
-                               └───────────────┬────────────────┘
-                                               │
-                                               ▼
-                              ┌──────────────────────────────────┐
-                              │    API Gateway (Port 5000)       │
-                              └────────┬─────────────────┬───────┘
-                                       │                 │
-                   ┌───────────────────┘                 └───────────────────┐
-                   ▼                                                         ▼
-    ┌──────────────────────────────┐                         ┌──────────────────────────────┐
-    │ Doctor Service (Port 5001)   │                         │ Appointment Service          │
-    │ /api/doctors                 │                         │ (Port 5002)                  │
-    └──────────────────────────────┘                         │ /api/patients, /api/appointments
-                                                             └──────────────────────────────┘
-```
+A modern, full-stack Hospital Management & Appointment System built with a **React + Vite Frontend** and a **Unified Node.js/Express Backend** powered by **PostgreSQL**.
 
 ---
 
-## 🌟 Key Features
+## 🚀 Simple Production Deployment (Render)
 
-- 🌐 **API Gateway (`Port 5000`)**: Single entry point for all frontend API calls.
-- 🩺 **Doctor Service (`Port 5001`)**: Doctor profiles, specializations, schedule & availability.
-- 📅 **Appointment Service (`Port 5002`)**: Patient authentication, slot conflict resolution, appointment scheduling, and digital prescriptions.
-- 💻 **React + Vite Frontend**: Clean UI with Tailwind CSS, Doctor Search, Patient Dashboard, and Doctor Dashboard.
+Now you only need to deploy **2 services** on Render:
+
+1. **`backend`** (Web Service on Render)
+   - Root Directory: `backend`
+   - Build Command: `npm install`
+   - Start Command: `node index.js`
+   - Environment Variable: `DATABASE_URL` = *(Your Render PostgreSQL DB URL)*
+
+2. **`frontend`** (Static Site on Render)
+   - Root Directory: `frontend`
+   - Build Command: `npm install && npm run build`
+   - Publish Directory: `dist`
+   - Environment Variable: `VITE_API_GATEWAY_URL` = `https://your-backend-service.onrender.com/api`
 
 ---
 
-## 🚀 Quick Setup Instructions
+## 💻 Local Running Instructions
 
 ### 1. Database Setup
 ```bash
@@ -47,28 +30,14 @@ createdb -U postgres hospital_db
 psql -U postgres -d postgres -f backend/schema.sql
 ```
 
-### 2. Doctor Microservice (`Port 5001`)
+### 2. Backend Service (`Port 5000`)
 ```bash
-cd backend/doctor_service
+cd backend
 npm install
 npm run dev
 ```
 
-### 3. Appointment Microservice (`Port 5002`)
-```bash
-cd backend/appointment_service
-npm install
-npm run dev
-```
-
-### 4. API Gateway (`Port 5000`)
-```bash
-cd backend/api_gateway
-npm install
-npm run dev
-```
-
-### 5. Frontend Application (`Port 5173`)
+### 3. Frontend App (`Port 5173`)
 ```bash
 cd frontend
 npm install
