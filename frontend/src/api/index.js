@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// All frontend HTTP requests go through a SINGLE port: API Gateway (Port 5000)
-const API_GATEWAY_URL = 'http://localhost:5000/api';
+// In Production (Render), reads VITE_API_GATEWAY_URL from environment variables.
+// In Development, defaults to http://localhost:5000/api
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:5000/api';
 
 export const gatewayApi = axios.create({
   baseURL: API_GATEWAY_URL,
@@ -17,9 +18,9 @@ gatewayApi.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// Unified API Methods routed via API Gateway (Port 5000)
+// Unified API Methods routed via API Gateway
 export const api = {
-  // Doctor Routes (routed via Gateway to Doctor Service 5001)
+  // Doctor Routes (routed via Gateway to Doctor Service)
   getDoctors: (params) => gatewayApi.get('/doctors', { params }),
   getDoctorById: (id) => gatewayApi.get(`/doctors/${id}`),
   getSpecializations: () => gatewayApi.get('/doctors/specializations/list'),
@@ -28,7 +29,7 @@ export const api = {
   getDoctorProfile: () => gatewayApi.get('/doctors/me'),
   updateDoctorProfile: (data) => gatewayApi.put('/doctors/profile', data),
 
-  // Patient & Appointment Routes (routed via Gateway to Appointment Service 5002)
+  // Patient & Appointment Routes (routed via Gateway to Appointment Service)
   patientLogin: (credentials) => gatewayApi.post('/patients/login', credentials),
   patientRegister: (data) => gatewayApi.post('/patients/register', data),
   getPatientProfile: () => gatewayApi.get('/patients/me'),

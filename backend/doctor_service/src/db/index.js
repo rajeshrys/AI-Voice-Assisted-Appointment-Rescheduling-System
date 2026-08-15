@@ -1,12 +1,21 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const connectionConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    }
+  : {
+      host: (process.env.DB_HOST || 'localhost').trim(),
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      database: (process.env.DB_NAME || process.env.DB_DATABASE || 'postgres').trim(),
+      user: (process.env.DB_USER || 'postgres').trim(),
+      password: (process.env.DB_PASSWORD || 'postgres').trim(),
+    };
+
 const pool = new Pool({
-  host: (process.env.DB_HOST || 'localhost').trim(),
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  database: (process.env.DB_NAME || process.env.DB_DATABASE || 'postgres').trim(),
-  user: (process.env.DB_USER || 'postgres').trim(),
-  password: (process.env.DB_PASSWORD || 'postgres').trim(),
+  ...connectionConfig,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
