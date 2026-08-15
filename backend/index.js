@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const initDatabase = require('./src/db/initDb');
 const doctorRoutes = require('./src/routes/doctor.routes');
 const patientRoutes = require('./src/routes/patient.routes');
 const appointmentRoutes = require('./src/routes/appointment.routes');
@@ -17,6 +18,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
     service: 'Unified Hospital Management System Backend Service',
+    database: 'Neon PostgreSQL Cloud',
     timestamp: new Date(),
   });
 });
@@ -35,9 +37,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🏥 Unified Backend Service running on port ${PORT}`);
   console.log(`   ├─ Doctor API:      http://localhost:${PORT}/api/doctors`);
   console.log(`   ├─ Patient API:     http://localhost:${PORT}/api/patients`);
   console.log(`   └─ Appointment API: http://localhost:${PORT}/api/appointments`);
+  
+  // Auto-initialize Neon PostgreSQL tables & seed data
+  await initDatabase();
 });
