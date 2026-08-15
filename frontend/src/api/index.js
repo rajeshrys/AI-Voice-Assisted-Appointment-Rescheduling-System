@@ -1,12 +1,9 @@
 import axios from 'axios';
 
-// In Production (Vercel build), automatically defaults to https://ai-voice-assisted-appointment.onrender.com/api
-// In Development (Local), defaults to http://localhost:5000/api
+// Render production backend gateway URL
 const API_GATEWAY_URL =
   import.meta.env.VITE_API_GATEWAY_URL ||
-  (import.meta.env.PROD
-    ? 'https://ai-voice-assisted-appointment.onrender.com/api'
-    : 'http://localhost:5000/api');
+  'https://ai-voice-assisted-appointment.onrender.com/api';
 
 export const gatewayApi = axios.create({
   baseURL: API_GATEWAY_URL,
