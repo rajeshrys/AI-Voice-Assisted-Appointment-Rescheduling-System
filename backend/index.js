@@ -10,7 +10,24 @@ const appointmentRoutes = require('./src/routes/appointment.routes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// CORS configuration supporting Vercel frontend and local dev
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for flexible cross-origin API calls
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 
 // Health Check Endpoint
@@ -19,6 +36,7 @@ app.get('/health', (req, res) => {
     status: 'OK',
     service: 'Unified Hospital Management System Backend Service',
     database: 'Neon PostgreSQL Cloud',
+    allowedOrigins,
     timestamp: new Date(),
   });
 });
