@@ -1,38 +1,41 @@
-# 🏥 Hospital Management System (Microservices Architecture)
+# 🏥 Hospital Management System (API Gateway + Microservices Architecture)
 
-A modern, full-stack Hospital Management & Appointment System built with a **React + Vite Frontend** and a **Node.js/Express Microservices Backend** powered by **PostgreSQL**.
+A modern, full-stack Hospital Management & Appointment System built with a **React + Vite Frontend**, an **API Gateway**, and specialized **Node.js/Express Microservices** powered by **PostgreSQL**.
+
+---
+
+## 🌐 Single Entry Point Architecture (API Gateway)
+
+All frontend interactions connect exclusively through **ONE single port**: **API Gateway (`http://localhost:5000`)**.
+The API Gateway seamlessly proxies and load balances traffic to the underlying microservices:
+
+```
+                               ┌────────────────────────────────┐
+                               │     React Frontend (Port 5173) │
+                               └───────────────┬────────────────┘
+                                               │
+                                               ▼
+                              ┌──────────────────────────────────┐
+                              │    API Gateway (Port 5000)       │
+                              └────────┬─────────────────┬───────┘
+                                       │                 │
+                   ┌───────────────────┘                 └───────────────────┐
+                   ▼                                                         ▼
+    ┌──────────────────────────────┐                         ┌──────────────────────────────┐
+    │ Doctor Service (Port 5001)   │                         │ Appointment Service          │
+    │ /api/doctors                 │                         │ (Port 5002)                  │
+    └──────────────────────────────┘                         │ /api/patients, /api/appointments
+                                                             └──────────────────────────────┘
+```
 
 ---
 
 ## 🌟 Key Features
 
-- 🩺 **Doctor Service Microservice (Port 5001)**:
-  - Doctor Registration & Authentication (JWT & bcrypt password hashing).
-  - Doctor Search & Filtering by Specialization, Name, and Availability.
-  - Doctor Profile & Working Schedule Management.
-- 📅 **Appointment Service Microservice (Port 5002)**:
-  - Patient Registration & Authentication.
-  - Real-time Slot Availability & Overlap Conflict Prevention.
-  - Appointment Booking & Status Management (`SCHEDULED`, `CONFIRMED`, `COMPLETED`, `CANCELLED`).
-  - Digital Prescription & Clinical Notes Entry for Doctors.
-- 💻 **Modern React + Vite Frontend**:
-  - Simple, fast, and responsive user interface with **Tailwind CSS**.
-  - Interactive Doctor Directory & Specialization Chips.
-  - Modal-based Booking Flow and Slot Picker.
-  - Separate **Patient Dashboard** and **Doctor Dashboard**.
-
----
-
-## 🏗️ Architecture Overview
-
-```
-hospital-management-system/
-├── backend/
-│   ├── schema.sql                       # PostgreSQL Database Schema & Seed Data
-│   ├── doctor_service/                  # Doctor Microservice (Port 5001)
-│   └── appointment_service/             # Appointment & Patient Microservice (Port 5002)
-└── frontend/                            # React + Vite Frontend (Port 5173)
-```
+- 🌐 **API Gateway (`Port 5000`)**: Single entry point for all frontend API calls.
+- 🩺 **Doctor Service (`Port 5001`)**: Doctor profiles, specializations, schedule & availability.
+- 📅 **Appointment Service (`Port 5002`)**: Patient authentication, slot conflict resolution, appointment scheduling, and digital prescriptions.
+- 💻 **React + Vite Frontend**: Clean UI with Tailwind CSS, Doctor Search, Patient Dashboard, and Doctor Dashboard.
 
 ---
 
@@ -58,7 +61,14 @@ npm install
 npm run dev
 ```
 
-### 4. Frontend Application (`Port 5173`)
+### 4. API Gateway (`Port 5000`)
+```bash
+cd backend/api_gateway
+npm install
+npm run dev
+```
+
+### 5. Frontend Application (`Port 5173`)
 ```bash
 cd frontend
 npm install
