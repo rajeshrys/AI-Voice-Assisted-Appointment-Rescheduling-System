@@ -59,9 +59,11 @@ export const api = {
   processSpeech: (data) => gatewayApi.post('/voice/process-speech', data),
   endVoiceCall: (data) => gatewayApi.post('/voice/end-call', data),
   triggerPhoneCall: (data) => gatewayApi.post('/voice/trigger-call', data),
-  getCallLogs: () => gatewayApi.get('/voice/call-logs'),
-  getCallLogById: (callId) => gatewayApi.get(`/voice/call-logs/${callId}`),
+  // Missed Appointment Watcher Routes
+  checkMissedAppointments: () => gatewayApi.post('/appointments/check-missed'),
+  getMissedAppointments: () => gatewayApi.get('/appointments/missed/list'),
 };
+
 
 
 export default api;

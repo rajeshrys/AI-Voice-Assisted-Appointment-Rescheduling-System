@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS appointments (
     doctor_id INT NOT NULL REFERENCES doctors(doctor_id) ON DELETE CASCADE,
     appointment_date DATE NOT NULL,
     time_slot VARCHAR(50) NOT NULL,
-    status VARCHAR(30) DEFAULT 'SCHEDULED' CHECK (status IN ('SCHEDULED', 'CONFIRMED', 'COMPLETED', 'CANCELLED')),
+    status VARCHAR(30) DEFAULT 'SCHEDULED' CHECK (status IN ('SCHEDULED', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'MISSED', 'NO_SHOW')),
+
     reason TEXT,
     prescription TEXT,
     notes TEXT,

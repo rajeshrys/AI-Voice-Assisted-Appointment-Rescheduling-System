@@ -23,6 +23,8 @@ import {
   Radio,
   ExternalLink,
   CheckCircle,
+  AlertTriangle,
+  Zap,
 } from 'lucide-react';
 
 const languageOptions = [
@@ -95,10 +97,15 @@ export default function VoiceDashboard() {
   const [telephonyProvider, setTelephonyProvider] = useState('twilio'); // twilio | vapi
   const [telephonyStatusMsg, setTelephonyStatusMsg] = useState(null);
 
+  // Missed Appointments Detector State
+  const [missedAppointments, setMissedAppointments] = useState([]);
+  const [missedScanLoading, setMissedScanLoading] = useState(false);
+  const [missedScanMsg, setMissedScanMsg] = useState(null);
+
   // System Audit & Logs State
   const [callLogsList, setCallLogsList] = useState([]);
   const [selectedCallDetail, setSelectedCallDetail] = useState(null);
-  const [activeTab, setActiveTab] = useState('call_simulator'); // call_simulator | audit_logs
+  const [activeTab, setActiveTab] = useState('call_simulator'); // call_simulator | missed_watcher | audit_logs
 
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -106,7 +113,6 @@ export default function VoiceDashboard() {
 
   const currentLangObj = languageOptions.find((l) => l.code === selectedLang) || languageOptions[0];
 
-  // Initialize Speech Recognition bound to selected language
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -137,6 +143,7 @@ export default function VoiceDashboard() {
 
   useEffect(() => {
     fetchCallLogs();
+    fetchMissedAppointments();
   }, []);
 
   useEffect(() => {
@@ -167,7 +174,36 @@ export default function VoiceDashboard() {
     }
   };
 
-  // Text-To-Speech Synthesis bound to selected language locale
+  const fetchMissedAppointments = async () => {
+    try {
+      const res = await api.getMissedAppointments();
+      if (res.data.success) {
+        setMissedAppointments(res.data.missedAppointments);
+      }
+    } catch (err) {
+      console.error('Error fetching missed appointments:', err);
+    }
+  };
+
+  // Run instant manual missed scan
+  const handleRunMissedScan = async () => {
+    setMissedScanLoading(true);
+    setMissedScanMsg(null);
+    try {
+      const res = await api.checkMissedAppointments();
+      if (res.data.success) {
+        setMissedScanMsg(res.data.message);
+        fetchMissedAppointments();
+        fetchCallLogs();
+      }
+    } catch (err) {
+      console.error('Error running missed scan:', err);
+      alert(err.response?.data?.message || 'Failed to run missed appointment scan.');
+    } finally {
+      setMissedScanLoading(false);
+    }
+  };
+
   const speakText = (text) => {
     if (!isTtsActive || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
@@ -183,7 +219,6 @@ export default function VoiceDashboard() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // 1. Start AI Voice Call Simulator
   const handleStartCall = async () => {
     if (!appointmentId) return;
     setLoading(true);
@@ -212,7 +247,6 @@ export default function VoiceDashboard() {
     }
   };
 
-  // 2. Trigger Outbound Mobile Phone Call (Twilio / Vapi)
   const handleTriggerMobileCall = async () => {
     if (!appointmentId || !targetPhone) return;
     setLoading(true);
@@ -238,7 +272,6 @@ export default function VoiceDashboard() {
     }
   };
 
-  // 3. Process Speech Turn
   const handleSendSpeech = async (overrideText = null) => {
     const textToSend = overrideText || inputText;
     if (!textToSend.trim() || !callSession || callStatus !== 'active') return;
@@ -277,6 +310,7 @@ export default function VoiceDashboard() {
         if (callEnded) {
           setCallStatus('ended');
           fetchCallLogs();
+          fetchMissedAppointments();
         }
       }
     } catch (err) {
@@ -286,7 +320,6 @@ export default function VoiceDashboard() {
     }
   };
 
-  // 4. Microphone Toggle
   const toggleListening = () => {
     if (!recognitionRef.current) {
       alert('Speech Recognition is not supported in this browser. Please use Chrome or type your speech.');
@@ -302,7 +335,6 @@ export default function VoiceDashboard() {
     }
   };
 
-  // 5. End Call
   const handleEndCall = async () => {
     if (callSession) {
       try {
@@ -315,6 +347,7 @@ export default function VoiceDashboard() {
     setCallStatus('ended');
     setIsListening(false);
     fetchCallLogs();
+    fetchMissedAppointments();
   };
 
   const formatTime = (secs) => {
@@ -336,24 +369,24 @@ export default function VoiceDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Header Banner */}
+      {/* Header Banner */}
       <div className="bg-gradient-to-r from-teal-800 via-cyan-800 to-indigo-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-3">
             <span className="bg-teal-500/30 text-teal-200 uppercase text-xs px-3 py-1 rounded-full border border-teal-400/40 flex items-center gap-1.5 font-semibold">
-              <Sparkles className="w-3.5 h-3.5" /> Multi-Lingual AI Voice Engine
+              <Zap className="w-3.5 h-3.5 text-amber-300" /> Autonomous Missed Call System
             </span>
           </div>
           <h1 className="text-3xl font-extrabold mt-3 tracking-tight">AI Voice Rescheduling & Telephony</h1>
           <p className="text-teal-100 text-sm mt-1 max-w-2xl">
-            Autonomous multi-lingual speech agent (English 🇺🇸, Spanish 🇪🇸, Hindi 🇮🇳, French 🇫🇷, German 🇩🇪) with real Twilio & Vapi mobile phone call integration.
+            Detects missed appointments, triggers automatic PSTN voice calls (Twilio/Vapi), and reschedules visits via natural multi-lingual voice conversation.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/20">
+        <div className="flex flex-wrap items-center gap-2 bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/20">
           <button
             onClick={() => setActiveTab('call_simulator')}
-            className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all flex items-center gap-1.5 ${
               activeTab === 'call_simulator'
                 ? 'bg-white text-teal-900 shadow-md font-bold'
                 : 'text-white hover:bg-white/10'
@@ -362,24 +395,33 @@ export default function VoiceDashboard() {
             <Phone className="w-4 h-4" /> Voice Simulator
           </button>
           <button
+            onClick={() => setActiveTab('missed_watcher')}
+            className={`px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all flex items-center gap-1.5 ${
+              activeTab === 'missed_watcher'
+                ? 'bg-white text-teal-900 shadow-md font-bold'
+                : 'text-white hover:bg-white/10'
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4 text-amber-300" /> Missed Watcher ({missedAppointments.length})
+          </button>
+          <button
             onClick={() => setActiveTab('audit_logs')}
-            className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all flex items-center gap-1.5 ${
               activeTab === 'audit_logs'
                 ? 'bg-white text-teal-900 shadow-md font-bold'
                 : 'text-white hover:bg-white/10'
             }`}
           >
-            <Database className="w-4 h-4" /> Call & Audit Logs
+            <Database className="w-4 h-4" /> Call Logs
           </button>
         </div>
       </div>
 
-      {activeTab === 'call_simulator' ? (
+      {activeTab === 'call_simulator' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Language Picker, Controls & Phone UI */}
+          {/* Left Column */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
-              {/* Phone Bar */}
               <div className="bg-slate-900 px-6 py-4 text-white flex justify-between items-center border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
@@ -400,9 +442,7 @@ export default function VoiceDashboard() {
                 </button>
               </div>
 
-              {/* Language Selector & Controls Header */}
               <div className="p-6 bg-slate-50 border-b border-slate-100 space-y-4">
-                {/* Language Picker */}
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Globe className="w-4 h-4 text-teal-600" /> Select AI Voice Language
@@ -421,7 +461,6 @@ export default function VoiceDashboard() {
                   </select>
                 </div>
 
-                {/* Appointment ID & Outbound Mobile Phone Button */}
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                     Target Appointment ID
@@ -461,7 +500,6 @@ export default function VoiceDashboard() {
                   </button>
                 </div>
 
-                {/* Call Status Visualizer */}
                 <div className="bg-slate-900 rounded-2xl p-6 text-center space-y-3 relative overflow-hidden">
                   <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-teal-500 to-indigo-600 flex items-center justify-center shadow-lg relative">
                     <Bot className="w-10 h-10 text-white" />
@@ -495,7 +533,6 @@ export default function VoiceDashboard() {
                 </div>
               </div>
 
-              {/* Sample Preset Pills in Target Language */}
               <div className="p-4 bg-slate-100/70 border-b border-slate-200">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                   Sample Utterances ({currentLangObj.flag} {currentLangObj.label}):
@@ -514,7 +551,6 @@ export default function VoiceDashboard() {
                 </div>
               </div>
 
-              {/* Speech Input Form */}
               <div className="p-4 bg-white space-y-3">
                 <form
                   onSubmit={(e) => {
@@ -532,7 +568,6 @@ export default function VoiceDashboard() {
                         ? 'bg-rose-500 text-white border-rose-600 animate-pulse'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                     } disabled:opacity-40`}
-                    title={`Microphone input (${currentLangObj.locale})`}
                   >
                     {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
                   </button>
@@ -564,9 +599,8 @@ export default function VoiceDashboard() {
             </div>
           </div>
 
-          {/* Right Column: Live Transcript & AI Tool Logs */}
+          {/* Right Column */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Transcript Panel */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[480px]">
               <div className="bg-slate-900 px-6 py-4 text-white flex justify-between items-center border-b border-slate-800">
                 <div className="flex items-center gap-2">
@@ -628,7 +662,6 @@ export default function VoiceDashboard() {
               </div>
             </div>
 
-            {/* Executed Tools Inspector */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
               <div className="bg-slate-900 px-6 py-4 text-white flex items-center gap-2 border-b border-slate-800">
                 <Activity className="w-5 h-5 text-amber-400" />
@@ -667,8 +700,114 @@ export default function VoiceDashboard() {
             </div>
           </div>
         </div>
-      ) : (
-        /* Audit Logs Table */
+      )}
+
+      {/* Autonomous Missed Appointment Watcher Tab */}
+      {activeTab === 'missed_watcher' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+          <div className="p-6 bg-slate-900 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <h3 className="text-lg font-bold">Autonomous Missed Appointment Watcher Engine</h3>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Background Cron Worker runs every 5 minutes in backend. Automatically marks overdue appointments as <span className="text-rose-400 font-bold">MISSED</span> and triggers PSTN auto-calls.
+              </p>
+            </div>
+
+            <button
+              onClick={handleRunMissedScan}
+              disabled={missedScanLoading}
+              className="bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2 shrink-0 disabled:opacity-50"
+            >
+              <Zap className="w-4 h-4 text-amber-300" />
+              {missedScanLoading ? 'Scanning Database...' : 'Run Instant Missed Scan Sweep'}
+            </button>
+          </div>
+
+          {missedScanMsg && (
+            <div className="mx-6 mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs font-semibold text-emerald-800 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{missedScanMsg}</span>
+            </div>
+          )}
+
+          <div className="p-6">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+              Auto-Detected Missed Appointments ({missedAppointments.length})
+            </h4>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-100 text-slate-700 uppercase text-xs tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th className="px-6 py-4 font-bold">Appt ID</th>
+                    <th className="px-6 py-4 font-bold">Patient Details</th>
+                    <th className="px-6 py-4 font-bold">Doctor</th>
+                    <th className="px-6 py-4 font-bold">Missed Date & Slot</th>
+                    <th className="px-6 py-4 font-bold">Status</th>
+                    <th className="px-6 py-4 font-bold">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {missedAppointments.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center py-12 text-slate-400 font-medium">
+                        No missed appointments detected yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    missedAppointments.map((appt) => (
+                      <tr key={appt.appointment_id} className="hover:bg-slate-50/80 transition-all">
+                        <td className="px-6 py-4 font-mono text-xs font-bold text-indigo-700">
+                          #{appt.appointment_id}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-900">{appt.patient_first_name} {appt.patient_last_name}</div>
+                          <div className="text-xs text-slate-500">{appt.patient_phone || appt.patient_email}</div>
+                        </td>
+                        <td className="px-6 py-4 font-medium text-slate-800">
+                          Dr. {appt.doctor_first_name} {appt.doctor_last_name}
+                          <div className="text-xs text-teal-600 font-normal">{appt.specialization}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-slate-900">{new Date(appt.appointment_date).toLocaleDateString()}</div>
+                          <div className="text-xs text-slate-500 font-mono">{appt.time_slot}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-100 text-rose-800 flex items-center gap-1 w-fit">
+                            <AlertTriangle className="w-3.5 h-3.5" /> {appt.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => {
+                              setAppointmentId(appt.appointment_id);
+                              setTargetPhone(appt.patient_phone || '+15550192831');
+                              setActiveTab('call_simulator');
+                              handleStartCall();
+                            }}
+                            className="bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-xs transition-all flex items-center gap-1"
+                          >
+                            <Phone className="w-3.5 h-3.5" /> Call AI Reschedule
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audit Logs Tab */}
+      {activeTab === 'audit_logs' && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
           <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
             <div>

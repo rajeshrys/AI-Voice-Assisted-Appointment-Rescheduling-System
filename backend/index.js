@@ -70,4 +70,9 @@ app.listen(PORT, async () => {
 
   // Auto-initialize Neon PostgreSQL tables & seed data
   await initDatabase();
+
+  // Initialize Autonomous Missed Appointment Cron Watcher
+  const { initMissedAppointmentDetector } = require('./src/services/missedAppointmentDetector.service');
+  initMissedAppointmentDetector();
 });
+

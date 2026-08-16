@@ -450,5 +450,46 @@ router.post('/:id/cancel', async (req, res) => {
   }
 });
 
+// 12. POST Trigger Manual Scan for Missed Appointments
+router.post('/check-missed', async (req, res) => {
+  try {
+    const { detectAndCallMissedAppointments } = require('../services/missedAppointmentDetector.service');
+    const missed = await detectAndCallMissedAppointments();
+    return res.status(200).json({
+      success: true,
+      message: `Missed appointment scan completed. ${missed.length} missed appointments detected and auto-called.`,
+      missedAppointments: missed,
+    });
+  } catch (error) {
+    console.error('Error running manual missed scan:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Error running missed appointment scan.' });
+  }
+});
+
+// 13. GET List All Missed Appointments
+router.get('/missed/list', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT a.*, 
+              p.first_name AS patient_first_name, p.last_name AS patient_last_name, p.phone AS patient_phone, p.email AS patient_email,
+              d.first_name AS doctor_first_name, d.last_name AS doctor_last_name, d.specialization
+       FROM appointments a
+       JOIN patients p ON a.patient_id = p.patient_id
+       JOIN doctors d ON a.doctor_id = d.doctor_id
+       WHERE a.status = 'MISSED' OR a.status = 'NO_SHOW'
+       ORDER BY a.appointment_date DESC, a.updated_at DESC`
+    );
+
+    return res.status(200).json({
+      success: true,
+      missedAppointments: result.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching missed appointments list:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Error fetching missed appointments.' });
+  }
+});
+
 module.exports = router;
+
 
