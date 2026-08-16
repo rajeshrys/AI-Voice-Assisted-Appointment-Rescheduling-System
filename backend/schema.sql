@@ -49,6 +49,33 @@ CREATE TABLE IF NOT EXISTS appointments (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 4. Appointment Reschedule History Audit Table
+CREATE TABLE IF NOT EXISTS appointment_history (
+    history_id SERIAL PRIMARY KEY,
+    appointment_id INT NOT NULL REFERENCES appointments(appointment_id) ON DELETE CASCADE,
+    old_date DATE,
+    old_time VARCHAR(50),
+    new_date DATE,
+    new_time VARCHAR(50),
+    changed_by VARCHAR(50) DEFAULT 'ai_voice_agent',
+    status VARCHAR(30) DEFAULT 'RESCHEDULED',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5. AI Voice Call Logs & Dialogue Audit Table
+CREATE TABLE IF NOT EXISTS call_logs (
+    log_id SERIAL PRIMARY KEY,
+    call_id VARCHAR(100) UNIQUE NOT NULL,
+    patient_id INT REFERENCES patients(patient_id) ON DELETE CASCADE,
+    appointment_id INT REFERENCES appointments(appointment_id) ON DELETE CASCADE,
+    status VARCHAR(50) DEFAULT 'IN_PROGRESS',
+    intent VARCHAR(50),
+    transcript JSONB DEFAULT '[]'::jsonb,
+    events JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance optimization
 CREATE INDEX IF NOT EXISTS idx_doctors_email ON doctors(email);
 CREATE INDEX IF NOT EXISTS idx_doctors_spec ON doctors(specialization);
@@ -56,6 +83,9 @@ CREATE INDEX IF NOT EXISTS idx_patients_email ON patients(email);
 CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_doctor ON appointments(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date);
+CREATE INDEX IF NOT EXISTS idx_history_appointment ON appointment_history(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_call_logs_call_id ON call_logs(call_id);
+CREATE INDEX IF NOT EXISTS idx_call_logs_patient ON call_logs(patient_id);
 
 -- Seed Data (Initial Doctors for testing)
 INSERT INTO doctors (first_name, last_name, email, password_hash, phone, specialization, qualification, experience_years, consultation_fee, available_days, start_time, end_time, bio)

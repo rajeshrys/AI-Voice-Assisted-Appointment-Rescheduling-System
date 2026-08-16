@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Stethoscope, User, LogOut, Calendar, Home, ShieldCheck } from 'lucide-react';
+import { Stethoscope, User, LogOut, Calendar, Home, ShieldCheck, Phone, Sparkles } from 'lucide-react';
 
 const Navbar = () => {
   const { user, role, logout } = useAuth();
@@ -33,7 +33,7 @@ const Navbar = () => {
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center gap-2 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
               to="/"
               className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-teal-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-all"
@@ -41,6 +41,19 @@ const Navbar = () => {
               <Home className="w-4 h-4" />
               <span>Find Doctors</span>
             </Link>
+
+            <Link
+              to="/voice-dashboard"
+              className="flex items-center gap-1.5 text-sm font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200/80 px-3 py-2 rounded-lg transition-all"
+            >
+              <Phone className="w-4 h-4 text-teal-600" />
+              <span>AI Voice Agent</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+              </span>
+            </Link>
+
 
             {user ? (
               <>

@@ -161,7 +161,7 @@ const PatientDashboard = () => {
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+                <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                   {appt.prescription ? (
                     <button
                       onClick={() => setSelectedPrescription(appt)}
@@ -173,15 +173,26 @@ const PatientDashboard = () => {
                     <span className="text-xs text-slate-400 italic">No prescription attached</span>
                   )}
 
-                  {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && (
-                    <button
-                      onClick={() => handleCancel(appt.appointment_id)}
-                      className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                    >
-                      Cancel Booking
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && (
+                      <>
+                        <a
+                          href={`/voice-dashboard?appointmentId=${appt.appointment_id}`}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 text-white rounded-lg shadow-sm transition-all"
+                        >
+                          <Phone className="w-3.5 h-3.5" /> AI Voice Reschedule
+                        </a>
+                        <button
+                          onClick={() => handleCancel(appt.appointment_id)}
+                          className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
+
 
               </div>
             ))}
